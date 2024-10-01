@@ -8,11 +8,9 @@ from evoman.controller import Controller
 import numpy as np
 
 
-def sigmoid_activation(x):
-	return 1./(1.+np.exp(-x))
+def ReLu(x):
+	return x * (x > 0)
 
-
-# implements controller structure for player
 class player_controller(Controller):
 	def __init__(self, _n_hidden):
 		self.n_hidden = [_n_hidden]
@@ -44,15 +42,15 @@ class player_controller(Controller):
 			# Preparing the weights and biases from the controller of layer 1
 
 			# Outputs activation first layer.
-			output1 = sigmoid_activation(inputs.dot(self.weights1) + self.bias1)
+			output1 = ReLu(inputs.dot(self.weights1) + self.bias1)
 
 			# Outputting activated second layer. Each entry in the output is an action
-			output = sigmoid_activation(output1.dot(self.weights2)+ self.bias2)[0]
+			output = ReLu(output1.dot(self.weights2)+ self.bias2)[0]
 		else:
 			bias = controller[:5].reshape(1, 5)
 			weights = controller[5:].reshape((len(inputs), 5))
 
-			output = sigmoid_activation(inputs.dot(weights) + bias)[0]
+			output = ReLu(inputs.dot(weights) + bias)[0]
 
 		# takes decisions about sprite actions
 		if output[0] > 0.5:
@@ -103,7 +101,7 @@ class enemy_controller(Controller):
 			weights1 = controller[self.n_hidden[0]:weights1_slice].reshape((len(inputs),self.n_hidden[0]))
 
 			# Outputs activation first layer.
-			output1 = sigmoid_activation(inputs.dot(weights1) + bias1)
+			output1 = ReLu(inputs.dot(weights1) + bias1)
 
 			# Preparing the weights and biases from the controller of layer 2
 			bias2 = controller[weights1_slice:weights1_slice + 5].reshape(1,5)
