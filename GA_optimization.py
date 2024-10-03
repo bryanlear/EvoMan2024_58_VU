@@ -1,6 +1,6 @@
 import time
 from evoman.environment import Environment
-from demo_controller import player_controller
+from controller import player_controller
 import numpy as np
 import os
 import pandas as pd

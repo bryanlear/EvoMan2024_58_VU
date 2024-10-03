@@ -3,7 +3,7 @@ import os
 import sys
 import pandas as pd 
 from evoman.environment import Environment
-from demo_controller import player_controller
+from controller import player_controller
 import time
 
 # Set up environment (same as demo script)
