@@ -8,9 +8,9 @@ import os
 from cma import CMAEvolutionStrategy
 
 # Parameters
-n_hidden = 20  # Number of hidden neurons in your controller
+n_hidden = 25  # Number of hidden neurons in your controller
 n_generations = 30
-population_size = 100
+population_size = 200
 
 # List of enemies to evaluate
 enemies = [1, 2, 3]
