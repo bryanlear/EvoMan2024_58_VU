@@ -1,5 +1,3 @@
 
 
 MESSAGE: Pygame initialized for simulation.
-
-MESSAGE: there is more than one enemy in 'enemies' list although the mode is not multiple.
