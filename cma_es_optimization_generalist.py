@@ -16,47 +16,67 @@ n_hidden = 10  # Hidden neurons
 # Enemy list
 enemies = [1, 2, 3, 4, 5, 6, 7, 8]
 
-# Enemy-specific parameters
+# Adjustments for sigma, population sizes, and fitness weights
 sigma_values = {
-    1: 0.6,
-    2: 0.7,
-    3: 0.8,
-    4: 0.6,
-    5: 0.7,
-    6: 0.9,
-    7: 0.8,
-    8: 0.5,
+    1: 0.75,  
+    2: 0.85,  
+    3: 0.8,   
+    4: 0.5,  
+    5: 0.8,   
+    6: 0.9,   
+    7: 1.2,   
+    8: 0.5,   
 }
 
 population_sizes = {
-    1: 600,
-    2: 600,
-    3: 500,
-    4: 500,
-    5: 500,
-    6: 400,
-    7: 400,
-    8: 700,
+    1: 800,  
+    2: 600,  
+    3: 600,   
+    4: 500,  
+    5: 500,  
+    6: 600,  
+    7: 500,  
+    8: 800, 
 }
 
-# Fitness weights
+n_generations_dict = {
+    1: 70,  
+    2: 100,  
+    3: 55,  
+    4: 35,  
+    5: 50,  
+    6: 70,  
+    7: 70,  
+    8: 100  
+}
+
+# Adjust the fitness weights based on previous results
 fitness_weights = {
-    1: {'alpha': 1.2, 'beta': 1.0, 'gamma': 0.3},
-    2: {'alpha': 1.0, 'beta': 1.2, 'gamma': 0.1},
-    3: {'alpha': 1.5, 'beta': 1.0, 'gamma': 0.5},
-    4: {'alpha': 0.8, 'beta': 1.6, 'gamma': 0.2},
-    5: {'alpha': 1.0, 'beta': 1.2, 'gamma': 0.1},
-    6: {'alpha': 1.3, 'beta': 1.1, 'gamma': 0.3},
-    7: {'alpha': 1.0, 'beta': 1.2, 'gamma': 0.2},
-    8: {'alpha': 1.0, 'beta': 1.5, 'gamma': 0.2},
+    1: {'alpha': 1.5, 'beta': 1.0, 'gamma': 0.25},  # Less emphasis on time penalty
+    2: {'alpha': 1.0, 'beta': 1.2, 'gamma': 0.15},  # Reduced time penalty weight
+    3: {'alpha': 1.5, 'beta': 1.3, 'gamma': 0.5},  
+    4: {'alpha': 1.0, 'beta': 1.8, 'gamma': 0.35}, 
+    5: {'alpha': 1.2, 'beta': 1.2, 'gamma': 0.15}, 
+    6: {'alpha': 1.4, 'beta': 1.3, 'gamma': 0.25},  # Adjusted for better convergence
+    7: {'alpha': 1.0, 'beta': 1.5, 'gamma': 0.15}, # Reduced time penalty
+    8: {'alpha': 1.0, 'beta': 1.7, 'gamma': 0.45},  # Better time management
 }
 
-# Parameters for adaptive sigma 
-sigma_adjustment_window = 5  # Generations to consider for adjustment
-sigma_adjustment_factor = 0.9  # Factor to decrease
-stagnation_threshold = 3  # Number of windows with no improvement
+# Parameters for adaptive sigma
+sigma_adjustment_window = 5 
+sigma_adjustment_factor = {
+    1: 0.85,  
+    2: 0.8,  
+    3: 0.9,  
+    4: 0.8,  
+    5: 0.85,  
+    6: 0.9,  
+    7: 0.8,  
+    8: 0.75,  
+}
+stagnation_threshold = 2  # Number of windows with no improvement for quicker adaptation
 
-# Evaluation function atmodule level
+# Evaluation function at module level
 def evaluate_individual(args):
     weights, enemy, n_hidden = args
     try:
@@ -79,16 +99,19 @@ def evaluate_individual(args):
     damage_to_enemy = 100 - e
     time_penalty = t / 500.0 * (1 + (100 - e) / 100)
 
+    # Get the enemy-specific alpha, beta, and gamma
     alpha = fitness_weights[enemy]['alpha']
     beta = fitness_weights[enemy]['beta']
     gamma = fitness_weights[enemy]['gamma']
+
+    # Calculate fitness
     fitness = - (alpha * gain + beta * damage_to_enemy - gamma * time_penalty)
 
     return fitness, gain, damage_to_enemy, time_penalty
 
-# Ensures multiprocessing code is protected
+# Multiprocessing protection
 if __name__ == "__main__":
-    multiprocessing.set_start_method('spawn')  # Use 'spawn' instead of 'fork' on macOS
+    multiprocessing.set_start_method('spawn')  # Use 'spawn' for macOS
 
     for enemy in enemies:
         print(f"Starting evolution for Enemy {enemy}")
@@ -114,13 +137,13 @@ if __name__ == "__main__":
         # Enemy-specific parameters
         sigma = sigma_values[enemy]
         population_size = population_sizes[enemy]
-        n_generations = 50 
+        n_generations = n_generations_dict[enemy]
 
         # Initialize CMA-ES
         x0 = np.random.randn(n_vars)
         es = CMAEvolutionStrategy(x0, sigma, {'popsize': population_size})
 
-        # Fitness history for tracking progress
+        # Fitness history tracking
         fitness_history = []
         gains_history = []
         damages_history = []
@@ -128,7 +151,6 @@ if __name__ == "__main__":
 
         for generation in range(n_generations):
             solutions = es.ask()
-
             args = [(weights, enemy, n_hidden) for weights in solutions]
 
             # Multiprocessing evaluation
@@ -140,7 +162,7 @@ if __name__ == "__main__":
             es.tell(solutions, fitnesses)
             es.disp()
 
-            # Tracking best fitness
+            # Track best fitness
             best_fitness = min(fitnesses)
             fitness_history.append(best_fitness)
             gains_history.append(np.mean(gains))
@@ -155,12 +177,12 @@ if __name__ == "__main__":
             print(f"Generation {generation + 1}/{n_generations} - Best Fitness: {best_fitness}")
             print(f"Average Gain: {avg_gain}, Average Damage: {avg_damage}, Average Time Penalty: {avg_time_penalty}")
 
-            # Adaptive sigma adjustment
+            # Adaptive sigma adjustment for each enemy based on more aggressive decay for specific ones
             if (generation + 1) % sigma_adjustment_window == 0:
                 if len(fitness_history) >= sigma_adjustment_window:
                     if np.abs(fitness_history[-sigma_adjustment_window] - best_fitness) < 1e-3:
-                        # No significant improvement --> reduce sigma
-                        es.sigma *= sigma_adjustment_factor
+                        # No significant improvement --> reduce sigma more aggressively
+                        es.sigma *= sigma_adjustment_factor[enemy]
                         print(f"Reducing sigma to {es.sigma} due to stagnation.")
 
                 # If stagnation continues over multiple windows
