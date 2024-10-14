@@ -13,67 +13,67 @@ np.random.seed(42)
 # Parameters
 n_hidden = 10  # Hidden neurons
 
-# Enemy list
-enemies = [1, 2, 3, 4, 5, 6, 7, 8]
+# Enemy groups (mixed abilities)
+enemies = [1, 6, 3]
+[]
 
-# Adjustments for sigma, population sizes, and fitness weights
 sigma_values = {
-    1: 0.75,  
-    2: 0.85,  
-    3: 0.8,   
-    4: 0.5,  
-    5: 0.8,   
-    6: 0.9,   
-    7: 1.2,   
-    8: 0.5,   
+    1: 0.85,  
+    2: 0.9,  
+    3: 0.85,   
+    4: 0.6,  
+    5: 0.85,   
+    6: 1.0,   
+    7: 1.4,   
+    8: 0.7,   
 }
 
 population_sizes = {
-    1: 800,  
-    2: 600,  
-    3: 600,   
-    4: 500,  
-    5: 500,  
-    6: 600,  
-    7: 500,  
-    8: 800, 
+    1: 850,  
+    2: 700,  
+    3: 650,   
+    4: 550,  
+    5: 550,  
+    6: 700,  
+    7: 600,  
+    8: 850, 
 }
 
 n_generations_dict = {
-    1: 70,  
-    2: 100,  
-    3: 55,  
-    4: 35,  
-    5: 50,  
-    6: 70,  
-    7: 70,  
-    8: 100  
+    1: 60,  
+    2: 110,  
+    3: 60, 
+    4: 30,  
+    5: 55,  
+    6: 75,  
+    7: 80,  
+    8: 120  
 }
 
-# Adjust the fitness weights based on previous results
+
 fitness_weights = {
-    1: {'alpha': 1.5, 'beta': 1.0, 'gamma': 0.25},  # Less emphasis on time penalty
-    2: {'alpha': 1.0, 'beta': 1.2, 'gamma': 0.15},  # Reduced time penalty weight
-    3: {'alpha': 1.5, 'beta': 1.3, 'gamma': 0.5},  
-    4: {'alpha': 1.0, 'beta': 1.8, 'gamma': 0.35}, 
-    5: {'alpha': 1.2, 'beta': 1.2, 'gamma': 0.15}, 
-    6: {'alpha': 1.4, 'beta': 1.3, 'gamma': 0.25},  # Adjusted for better convergence
-    7: {'alpha': 1.0, 'beta': 1.5, 'gamma': 0.15}, # Reduced time penalty
-    8: {'alpha': 1.0, 'beta': 1.7, 'gamma': 0.45},  # Better time management
-}
+    1: {'alpha': 1.5, 'beta': 1.1, 'gamma': 0.25},  
+    2: {'alpha': 1.2, 'beta': 1.3, 'gamma': 0.15},  
+    3: {'alpha': 1.6, 'beta': 1.4, 'gamma': 0.45},  
+    4: {'alpha': 1.1, 'beta': 1.9, 'gamma': 0.3},   
+    5: {'alpha': 1.3, 'beta': 1.4, 'gamma': 0.2},   
+    6: {'alpha': 1.5, 'beta': 1.4, 'gamma': 0.3},  
+    7: {'alpha': 1.0, 'beta': 1.6, 'gamma': 0.2},   
+    8: {'alpha': 1.1, 'beta': 1.8, 'gamma': 0.4},   }
 
-# Parameters for adaptive sigma
-sigma_adjustment_window = 5 
+sigma_adjustment_window = 7  # Allow longer exploration before reducing sigma
 sigma_adjustment_factor = {
     1: 0.85,  
-    2: 0.8,  
-    3: 0.9,  
-    4: 0.8,  
-    5: 0.85,  
-    6: 0.9,  
-    7: 0.8,  
-    8: 0.75,  
+    2: 0.9,  
+    3: 0.95,  
+    4: 0.85,  
+    5: 0.9,  
+    6: 0.95, 
+    7: 0.85,  
+    8: 0.8,   
 }
+
+
 stagnation_threshold = 2  # Number of windows with no improvement for quicker adaptation
 
 # Evaluation function at module level
