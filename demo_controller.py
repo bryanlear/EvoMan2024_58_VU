@@ -7,10 +7,8 @@
 from evoman.controller import Controller
 import numpy as np
 
-
 def sigmoid_activation(x):
 	return 1./(1.+np.exp(-x))
-
 
 # implements controller structure for player
 class player_controller(Controller):
