@@ -2,10 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-enemies = [1, 2, 3, 4, 5, 6, 7, 8]
+
+
+group_1 = [1, 3, 5, 8]
+group_2 = [2, 4, 6, 7]
+
+
+
+
+groups = [1, 2]
 num_runs = 10  # Set this based on your structure, or automate it
 
-def aggregate_fitness(enemy):
+def aggregate_fitness(groups):
     all_fitness_histories = []
     max_length = 0  # To track the maximum length of fitness histories
     
