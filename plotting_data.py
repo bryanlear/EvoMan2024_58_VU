@@ -84,7 +84,6 @@ def plot_fitness(algorithm1, algorithm2, group_name):
     plt.xlabel('Generations')
     plt.ylabel('Fitness')
     plt.legend(loc='upper left')
-    plt.grid(True)
     plt.ylim(0, 100)  # Setting y-axis limit for fitness
 
     # Save and display
