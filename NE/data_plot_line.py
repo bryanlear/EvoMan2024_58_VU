@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Set the file path
-file_path = "/Users/hanacosip/Desktop/MASTER/Evolutionary Computing/Task2EC/Task2EC/results_tests/group2_final/NE_group1_results_.txt"
+file_path = "NE/results_tests/NE_group1_results_.txt"
 # Read the data file using pandas
 # Adjust separator if needed (here using a comma)
 data = pd.read_csv(file_path, sep=',')
