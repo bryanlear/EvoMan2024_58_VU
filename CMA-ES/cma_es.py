@@ -16,13 +16,14 @@ n_hidden = 10  # Hidden neurons
 
 # Define enemy groups for training
 enemy_groups = {
+    'Group1': [1, 3, 5, 8],
     'Group2': [2, 4, 6, 7]
 }
 
 # Adjustments for sigma, population sizes, and fitness weights
 sigma_values = {
-    1: 0.75,
-    2: 0.85,
+    1: 0.6,
+    2: 0.6,
     3: 0.8,
     4: 0.5,
     5: 0.8,
@@ -43,8 +44,8 @@ population_sizes = {
 }
 
 n_generations_dict = {
-    1: 40,
-    2: 40,
+    1: 30,
+    2: 30,
     3: 30,
     4: 30,
     5: 30,
@@ -79,7 +80,6 @@ sigma_adjustment_factor = {
 }
 stagnation_threshold = 2  # Number of windows with no improvement for quicker adaptation
 
-# Evaluation function for enemy groups
 def evaluate_group_individual(args):
     weights, enemy_group, n_hidden = args
     total_fitness = 0
@@ -113,8 +113,8 @@ def evaluate_group_individual(args):
         beta = fitness_weights[enemy]['beta']
         gamma = fitness_weights[enemy]['gamma']
 
-        # Calculate fitness for this enemy
-        fitness = - (alpha * gain + beta * damage_to_enemy - gamma * time_penalty)
+        # Calculate fitness for this enemy (without negative sign)
+        fitness = alpha * gain + beta * damage_to_enemy - gamma * time_penalty
 
         # Accumulate for the group
         total_fitness += fitness
@@ -122,8 +122,14 @@ def evaluate_group_individual(args):
         total_damage_to_enemy += damage_to_enemy
         total_time_penalty += time_penalty
 
-    # Return average for the group
-    return total_fitness / len(enemy_group), total_gain / len(enemy_group), total_damage_to_enemy / len(enemy_group), total_time_penalty / len(enemy_group)
+    # Compute averages
+    avg_fitness = total_fitness / len(enemy_group)
+    avg_gain = total_gain / len(enemy_group)
+    avg_damage_to_enemy = total_damage_to_enemy / len(enemy_group)
+    avg_time_penalty = total_time_penalty / len(enemy_group)
+
+    # Return negative fitness for CMA-ES minimization and positive fitness for recording
+    return -avg_fitness, avg_fitness, avg_gain, avg_damage_to_enemy, avg_time_penalty
 
 # Main block for group evaluation
 if __name__ == "__main__":
@@ -164,8 +170,8 @@ if __name__ == "__main__":
             # Initialize CMA-ES
             x0 = np.random.randn(n_vars)
             es = CMAEvolutionStrategy(x0, sigma, {'popsize': population_size})
-            
-                        # Fitness history tracking
+
+            # Fitness history tracking
             fitness_history = []
             gains_history = []
             damages_history = []
@@ -179,13 +185,15 @@ if __name__ == "__main__":
                 with Pool(processes=2) as pool:
                     results = pool.map(evaluate_group_individual, args)
 
-                fitnesses, gains, damages_to_enemy, time_penalties = zip(*results)
+                # Unpack results
+                negative_fitnesses, fitnesses, gains, damages_to_enemy, time_penalties = zip(*results)
 
-                es.tell(solutions, fitnesses)
+                # Tell CMA-ES the negative fitnesses (since it minimizes)
+                es.tell(solutions, negative_fitnesses)
                 es.disp()
 
-                # Track best fitness for the group
-                best_fitness = min(fitnesses)
+                # Track best fitness for the group (positive fitness values)
+                best_fitness = max(fitnesses)
                 fitness_history.append(best_fitness)
                 gains_history.append(np.mean(gains))
                 damages_history.append(np.mean(damages_to_enemy))
@@ -247,6 +255,3 @@ if __name__ == "__main__":
             plt.legend()
             plt.savefig(f"{experiment_name}/fitness_components_{group_name}_run_{run}.png")
             plt.close()
-            
-            
-################################################
