@@ -1,126 +1,133 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Parameters
 num_generations = 30
 num_runs = 10
-groups = ['Group1', 'Group2']
+groups = ['group1', 'group2']
 
-# Base directories where your experiment data is stored
-base_dir_cma_es = "/CMA-ES"
-base_dir_ne = "/NE/results_tests"
+def read_cmaes_data(group):
+    cmaes_data = []
+    for run in range(1, num_runs + 1):
+        # Construct file path
+        file_path = os.path.join(f'CMAES_{group}', f'results_CMAES_{group}_run_{run}.txt')
+        if os.path.exists(file_path):
+            data = pd.read_csv(file_path)
+            cmaes_data.append(data)
+        else:
+            print(f'File not found: {file_path}')
+    return cmaes_data
 
-# Function to load CMA-ES fitness data
-def load_cmaes_fitness_data(group_name, run):
-    file_path = os.path.join(base_dir_cma_es, f"{group_name}_run_{run}", f"scaled_fitness_history_{group_name}_run_{run}.npy")
-    if os.path.exists(file_path):
-        return np.load(file_path)
-    else:
-        print(f"Fitness history file not found: {file_path}")
-        return None
-
-# Function to load NE fitness data using pandas
-def load_ne_fitness_data(group_name):
-    file_path = os.path.join(base_dir_ne, f"{group_name}_final", f"NE_group1_results_.txt")  # Adjust path as needed
-    if os.path.exists(file_path):
-        # Manually specify column names based on the data structure we saw
-        column_names = ['Run', 'Generation', 'Best_fitness', 'Mean_fitness', 'SD_mean_fitness']
-        data = pd.read_csv(file_path, sep=',', header=None, names=column_names)
+def read_ne_data(group):
+    # Handle inconsistency in file naming for Group2
+    ne_file = os.path.join('NE', 'results_tests', f'Group{group[-1]}_final', f'NE_group1_results_.txt')
+    if os.path.exists(ne_file):
+        data = pd.read_csv(ne_file, header=None)
+        # Assuming data has columns: ['Run', 'Generation', 'Best_fitness', 'Mean_fitness', 'SD_mean_fitness']
+        data.columns = ['Run', 'Generation', 'Best_fitness', 'Mean_fitness', 'SD_mean_fitness']
         return data
     else:
-        print(f"NE fitness file not found: {file_path}")
+        print(f'File not found: {ne_file}')
         return None
 
-# Function to compute the best and mean fitness for NE using pandas
-def get_ne_best_mean_fitness(group_name):
-    data = load_ne_fitness_data(group_name)
-    if data is not None:
-        # Group by 'Generation' and compute mean and standard deviation
-        best_fit_mean = data.groupby('Generation')['Best_fitness'].mean()
-        best_fit_sd = data.groupby('Generation')['Best_fitness'].std()
+def process_cmaes_data(cmaes_data):
+    best_fitness_runs = []
+    mean_fitness_runs = []
+    for df in cmaes_data:
+        df = df.iloc[:num_generations]  # Ensure we have num_generations rows
+        best_fitness_runs.append(df['Best_fitness'].values)
+        mean_fitness_runs.append(df['Mean_fitness'].values)
+    # Convert to numpy arrays
+    best_fitness_runs = np.array(best_fitness_runs)  # Shape: (num_runs, num_generations)
+    mean_fitness_runs = np.array(mean_fitness_runs)
+    # Compute mean and std over runs
+    best_fitness_mean = np.mean(best_fitness_runs, axis=0)
+    best_fitness_std = np.std(best_fitness_runs, axis=0)
+    mean_fitness_mean = np.mean(mean_fitness_runs, axis=0)
+    mean_fitness_std = np.std(mean_fitness_runs, axis=0)
+    return best_fitness_mean, best_fitness_std, mean_fitness_mean, mean_fitness_std
 
-        mean_fit_mean = data.groupby('Generation')['Mean_fitness'].mean()
-        mean_fit_sd = data.groupby('Generation')['Mean_fitness'].std()
+def process_ne_data(ne_data):
+    # ne_data is a DataFrame containing data from all runs
+    # We need to group by Generation and compute mean and std
+    grouped = ne_data.groupby('Generation')
+    best_fitness_mean = grouped['Best_fitness'].mean().values[:num_generations]
+    best_fitness_std = grouped['Best_fitness'].std().values[:num_generations]
+    mean_fitness_mean = grouped['Mean_fitness'].mean().values[:num_generations]
+    mean_fitness_std = grouped['Mean_fitness'].std().values[:num_generations]
+    return best_fitness_mean, best_fitness_std, mean_fitness_mean, mean_fitness_std
 
-        return best_fit_mean.values, mean_fit_mean.values, best_fit_sd.values, mean_fit_sd.values
-    return None, None, None, None
-
-
-def get_cmaes_best_mean_fitness(group_name):
-    best_fitness = []
-    mean_fitness = []
-    all_fitnesses = []
+def plot_fitness(group, cmaes_results, ne_results):
+    generations = np.arange(1, num_generations + 1)
+    # Unpack CMA-ES results
+    cmaes_best_mean, cmaes_best_std, cmaes_mean_mean, cmaes_mean_std = cmaes_results
+    # Unpack NE results
+    ne_best_mean, ne_best_std, ne_mean_mean, ne_mean_std = ne_results
     
-    for generation in range(num_generations):
-        fitness_for_generation = []
-        
-        for run in range(1, num_runs + 1):
-            fitness_history = load_cmaes_fitness_data(group_name, run)
-            
-            if fitness_history is not None:
-                fitness_for_generation.append(fitness_history[generation])
-        
-        if fitness_for_generation:
-        
-            best_fitness_for_gen = np.mean(fitness_for_generation)  
-            mean_fitness_for_gen = np.min(fitness_for_generation)   
+    plt.figure(figsize=(10,6))
 
-            best_fitness.append(best_fitness_for_gen)
-            mean_fitness.append(mean_fitness_for_gen)
-            all_fitnesses.append(fitness_for_generation)
-    
-    return best_fitness, mean_fitness, all_fitnesses
+    # Colors from the screenshot for each algorithm
+    cmaes_color = '#2ca02c'  # Green
+    ne_color = '#1f77b4'     # Blue
+    ne_mean_color = '#ff7f0e'  # Orange
+    cmaes_mean_color = '#d62728'  # Red
 
-# Moving average function for smoothing curves
-def moving_average(data, window_size=3):
-    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+    # Plot CMA-ES best fitness with shaded standard deviation
+    plt.plot(generations, cmaes_best_mean, label='Best CMA-ES', color=cmaes_color)
+    plt.fill_between(generations, 
+                     cmaes_best_mean - cmaes_best_std, 
+                     cmaes_best_mean + cmaes_best_std, 
+                     color=cmaes_color, alpha=0.3)
 
-# Function to plot fitness over generations
-def plot_fitness(group_name):
-    # Load CMA-ES fitness data
-    best_fitness_cmaes, mean_fitness_cmaes, all_fitness_cmaes = get_cmaes_best_mean_fitness(group_name)
-    std_fitness_cmaes = np.std(all_fitness_cmaes, axis=1)
+    # Plot NE best fitness with shaded standard deviation
+    plt.plot(generations, ne_best_mean, label='Best NE', color=ne_color)
+    plt.fill_between(generations, 
+                     ne_best_mean - ne_best_std, 
+                     ne_best_mean + ne_best_std, 
+                     color=ne_color, alpha=0.3)
 
-    # Smooth fitness curves with a moving average
-    best_fitness_cmaes_smoothed = moving_average(best_fitness_cmaes, window_size=3)
-    mean_fitness_cmaes_smoothed = moving_average(mean_fitness_cmaes, window_size=3)
+    # Plot CMA-ES mean fitness with shaded standard deviation
+    plt.plot(generations, cmaes_mean_mean, label='Mean CMA-ES', color=cmaes_mean_color, linestyle='--')
+    plt.fill_between(generations, 
+                     cmaes_mean_mean - cmaes_mean_std, 
+                     cmaes_mean_mean + cmaes_mean_std, 
+                     color=cmaes_mean_color, alpha=0.3)
 
-    # Load NE fitness data
-    best_fitness_ne, mean_fitness_ne, std_best_ne, std_mean_ne = get_ne_best_mean_fitness(group_name)
+    # Plot NE mean fitness with shaded standard deviation
+    plt.plot(generations, ne_mean_mean, label='Mean NE', color=ne_mean_color, linestyle='--')
+    plt.fill_between(generations, 
+                     ne_mean_mean - ne_mean_std, 
+                     ne_mean_mean + ne_mean_std, 
+                     color=ne_mean_color, alpha=0.3)
 
-    # Plot best and mean fitness with shaded regions for both algorithms
-    plt.figure()
-
-    # CMA-ES plotting (smoothed values)
-    plt.plot(range(len(best_fitness_cmaes_smoothed)), best_fitness_cmaes_smoothed, label=f"Best CMA-ES {group_name}", color='green')
-    plt.plot(range(len(mean_fitness_cmaes_smoothed)), mean_fitness_cmaes_smoothed, label=f"Mean CMA-ES {group_name}", linestyle='--', color='green')
-    plt.fill_between(range(len(mean_fitness_cmaes_smoothed)), 
-                     np.array(mean_fitness_cmaes_smoothed) - std_fitness_cmaes[1:-1], 
-                     np.array(mean_fitness_cmaes_smoothed) + std_fitness_cmaes[1:-1], 
-                     color='green', alpha=0.2)
-
-    # NE plotting
-    if best_fitness_ne is not None:
-        plt.plot(best_fitness_ne, label=f"Best NE {group_name}", color='blue')
-        plt.plot(mean_fitness_ne, label=f"Mean NE {group_name}", linestyle='--', color='blue')
-        plt.fill_between(range(num_generations), 
-                         np.array(mean_fitness_ne) - std_mean_ne, 
-                         np.array(mean_fitness_ne) + std_mean_ne, 
-                         color='blue', alpha=0.2)
-
-    # Add titles and labels
-    plt.title(f'Group {group_name} - Line Plot of Best and Mean Fitness')
+    # Set titles and labels to match the format in your screenshot
+    plt.title(f'Group {group.capitalize()} line plot of best and mean performance')
     plt.xlabel('Generations')
     plt.ylabel('Fitness')
-    plt.legend(loc='upper left')
-    plt.ylim(0, 100)
+    plt.legend(loc='upper right')
 
-    # Save and display
-    plt.savefig(f'fitness_plot_{group_name}.png')
+    # Save and show the plot
+    plt.savefig(f'fitness_plot_{group}.png')
     plt.show()
 
-# Plot fitness for both groups
-plot_fitness('Group1')
-plot_fitness('Group2')
+# Now, for each group, read the data and plot
+for group in groups:
+    print(f"\nProcessing data for {group.capitalize()}...")
+    # Read CMA-ES data
+    cmaes_data = read_cmaes_data(group)
+    if cmaes_data:
+        cmaes_results = process_cmaes_data(cmaes_data)
+    else:
+        print(f'No CMA-ES data for {group}')
+        continue  # Skip to the next group
+    # Read NE data
+    ne_data = read_ne_data(group)
+    if ne_data is not None:
+        ne_results = process_ne_data(ne_data)
+    else:
+        print(f'No NE data for {group}')
+        continue  # Skip to the next group
+    # Plot the results
+    plot_fitness(group, cmaes_results, ne_results)
